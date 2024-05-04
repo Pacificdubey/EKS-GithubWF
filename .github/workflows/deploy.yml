@@ -1,0 +1,34 @@
+name: Deploy to EKS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+
+    - name: Build and push Docker image
+      run: |
+        aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 730335217766.dkr.ecr.us-east-1.amazonaws.com/sample-app
+        docker build -t 730335217766.dkr.ecr.us-east-1.amazonaws.com/sample-app:latest .
+        docker push 730335217766.dkr.ecr.us-east-1.amazonaws.com/sample-app:latest
+    - name: Update kubeconfig
+      run: aws eks update-kubeconfig --name Dev --region us-east-1
+
+    - name: Update Kubernetes deployment
+      run: |
+        sed -i "s|nginx|730335217766.dkr.ecr.us-east-1.amazonaws.com/sample-app:latest|g" k8s/deployment.yaml
+        kubectl apply -f k8s/deployment.yaml
