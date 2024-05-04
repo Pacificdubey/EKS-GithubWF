@@ -1,9 +1,12 @@
-FROM node:14
+FROM python
 
 WORKDIR /app
 
 COPY . .
 
-EXPOSE 3000
+RUN pip install Flask
 
-CMD ["node", "index.js"]
+EXPOSE 5000
+
+CMD ["python", "app.py"]
+
